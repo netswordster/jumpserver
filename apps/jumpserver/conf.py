@@ -232,6 +232,19 @@ class Config(dict):
         'FEISHU_APP_ID': '',
         'FEISHU_APP_SECRET': '',
 
+        'AUTH_SMS': False,
+        'SMS_BACKEND': '',
+        'SMS_TEST_PHONE': '',
+
+        'ALIBABA_ACCESS_KEY_ID': '',
+        'ALIBABA_ACCESS_KEY_SECRET': '',
+        'ALIBABA_SMS_SIGN_AND_TEMPLATES': {},
+
+        'TENCENT_SECRET_ID': '',
+        'TENCENT_SECRET_KEY': '',
+        'TENCENT_SDKAPPID': '',
+        'TENCENT_SMS_SIGN_AND_TEMPLATES': {},
+
         'OTP_VALID_WINDOW': 2,
         'OTP_ISSUER_NAME': 'JumpServer',
         'EMAIL_SUFFIX': 'jumpserver.org',

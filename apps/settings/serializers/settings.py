@@ -3,11 +3,13 @@
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
+from common.message.backends.sms import BACKENDS
+
 __all__ = [
     'BasicSettingSerializer', 'EmailSettingSerializer', 'EmailContentSettingSerializer',
     'LDAPSettingSerializer', 'TerminalSettingSerializer', 'SecuritySettingSerializer',
     'SettingsSerializer', 'WeComSettingSerializer', 'DingTalkSettingSerializer',
-    'FeiShuSettingSerializer',
+    'FeiShuSettingSerializer', 'AlibabaSMSSettingSerializer', 'TencentSMSSettingSerializer',
 ]
 
 
@@ -51,7 +53,7 @@ class EmailSettingSerializer(serializers.Serializer):
         help_text=_('Tips: Used only as a test mail recipient')
     )
     EMAIL_USE_SSL = serializers.BooleanField(
-        required=False,  label=_('Use SSL'),
+        required=False, label=_('Use SSL'),
         help_text=_('If SMTP port is 465, may be select')
     )
     EMAIL_USE_TLS = serializers.BooleanField(
@@ -92,7 +94,8 @@ class LDAPSettingSerializer(serializers.Serializer):
         required=True, max_length=1024, label=_('LDAP server'), help_text=_('eg: ldap://localhost:389')
     )
     AUTH_LDAP_BIND_DN = serializers.CharField(required=False, max_length=1024, label=_('Bind DN'))
-    AUTH_LDAP_BIND_PASSWORD = serializers.CharField(max_length=1024, write_only=True, required=False, label=_('Password'))
+    AUTH_LDAP_BIND_PASSWORD = serializers.CharField(max_length=1024, write_only=True, required=False,
+                                                    label=_('Password'))
     AUTH_LDAP_SEARCH_OU = serializers.CharField(
         max_length=1024, allow_blank=True, required=False, label=_('User OU'),
         help_text=_('Use | split multi OUs')
@@ -103,7 +106,8 @@ class LDAPSettingSerializer(serializers.Serializer):
     )
     AUTH_LDAP_USER_ATTR_MAP = serializers.DictField(
         required=True, label=_('User attr map'),
-        help_text=_('User attr map present how to map LDAP user attr to jumpserver, username,name,email is jumpserver attr')
+        help_text=_(
+            'User attr map present how to map LDAP user attr to jumpserver, username,name,email is jumpserver attr')
     )
     AUTH_LDAP = serializers.BooleanField(required=False, label=_('Enable LDAP auth'))
 
@@ -129,12 +133,14 @@ class TerminalSettingSerializer(serializers.Serializer):
                     'avoid being able to log in after deleting')
     )
     TERMINAL_ASSET_LIST_SORT_BY = serializers.ChoiceField(SORT_BY_CHOICES, required=False, label=_('List sort by'))
-    TERMINAL_ASSET_LIST_PAGE_SIZE = serializers.ChoiceField(PAGE_SIZE_CHOICES, required=False, label=_('List page size'))
+    TERMINAL_ASSET_LIST_PAGE_SIZE = serializers.ChoiceField(PAGE_SIZE_CHOICES, required=False,
+                                                            label=_('List page size'))
     TERMINAL_SESSION_KEEP_DURATION = serializers.IntegerField(
         min_value=1, max_value=99999, required=True, label=_('Session keep duration'),
         help_text=_('Units: days, Session, record, command will be delete if more than duration, only in database')
     )
-    TERMINAL_TELNET_REGEX = serializers.CharField(allow_blank=True, max_length=1024, required=False, label=_('Telnet login regex'))
+    TERMINAL_TELNET_REGEX = serializers.CharField(allow_blank=True, max_length=1024, required=False,
+                                                  label=_('Telnet login regex'))
     TERMINAL_RDP_ADDR = serializers.CharField(
         required=False, label=_("RDP address"),
         max_length=1024,
@@ -175,7 +181,8 @@ class SecuritySettingSerializer(serializers.Serializer):
     SECURITY_LOGIN_LIMIT_TIME = serializers.IntegerField(
         min_value=5, max_value=99999, required=True,
         label=_('Block logon interval'),
-        help_text=_('Tip: (unit/minute) if the user has failed to log in for a limited number of times, no login is allowed during this time interval.')
+        help_text=_(
+            'Tip: (unit/minute) if the user has failed to log in for a limited number of times, no login is allowed during this time interval.')
     )
     SECURITY_MAX_IDLE_TIME = serializers.IntegerField(
         min_value=1, max_value=99999, required=False,
@@ -185,12 +192,14 @@ class SecuritySettingSerializer(serializers.Serializer):
     SECURITY_PASSWORD_EXPIRATION_TIME = serializers.IntegerField(
         min_value=1, max_value=99999, required=True,
         label=_('User password expiration'),
-        help_text=_('Tip: (unit: day) If the user does not update the password during the time, the user password will expire failure;The password expiration reminder mail will be automatic sent to the user by system within 5 days (daily) before the password expires')
+        help_text=_(
+            'Tip: (unit: day) If the user does not update the password during the time, the user password will expire failure;The password expiration reminder mail will be automatic sent to the user by system within 5 days (daily) before the password expires')
     )
     OLD_PASSWORD_HISTORY_LIMIT_COUNT = serializers.IntegerField(
         min_value=0, max_value=99999, required=True,
         label=_('Number of repeated historical passwords'),
-        help_text=_('Tip: When the user resets the password, it cannot be the previous n historical passwords of the user')
+        help_text=_(
+            'Tip: When the user resets the password, it cannot be the previous n historical passwords of the user')
     )
     SECURITY_PASSWORD_MIN_LENGTH = serializers.IntegerField(
         min_value=6, max_value=30, required=True,
@@ -233,6 +242,32 @@ class FeiShuSettingSerializer(serializers.Serializer):
     AUTH_FEISHU = serializers.BooleanField(default=False, label=_('Enable FeiShu Auth'))
 
 
+class BaseSMSSettingSerializer(serializers.Serializer):
+    AUTH_SMS = serializers.BooleanField(default=False, label=_('Enable SMS'))
+    SMS_TEST_PHONE = serializers.CharField(max_length=256, required=False, label=_('Test phone'))
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['SMS_BACKEND'] = self.fields['SMS_BACKEND'].default
+        return data
+
+
+class AlibabaSMSSettingSerializer(BaseSMSSettingSerializer):
+    SMS_BACKEND = serializers.ChoiceField(choices=BACKENDS.choices, default=BACKENDS.ALIBABA)
+    ALIBABA_ACCESS_KEY_ID = serializers.CharField(max_length=256, required=True, label='AccessKeyId')
+    ALIBABA_ACCESS_KEY_SECRET = serializers.CharField(
+        max_length=256, required=False, label='AccessKeySecret', write_only=True)
+    ALIBABA_SMS_SIGN_AND_TEMPLATES = serializers.DictField(label=_('Signatures and Templates'), required=True)
+
+
+class TencentSMSSettingSerializer(BaseSMSSettingSerializer):
+    SMS_BACKEND = serializers.ChoiceField(choices=BACKENDS.choices, default=BACKENDS.TENCENT)
+    TENCENT_SECRET_ID = serializers.CharField(max_length=256, required=True, label='Secret id')
+    TENCENT_SECRET_KEY = serializers.CharField(max_length=256, required=False, label='Secret key', write_only=True)
+    TENCENT_SDKAPPID = serializers.CharField(max_length=256, required=True, label='SDK app id')
+    TENCENT_SMS_SIGN_AND_TEMPLATES = serializers.DictField(label=_('Signatures and Templates'), required=True)
+
+
 class SettingsSerializer(
     BasicSettingSerializer,
     EmailSettingSerializer,
@@ -243,8 +278,8 @@ class SettingsSerializer(
     WeComSettingSerializer,
     DingTalkSettingSerializer,
     FeiShuSettingSerializer,
+    AlibabaSMSSettingSerializer,
+    TencentSMSSettingSerializer,
 ):
-
     # encrypt_fields 现在使用 write_only 来判断了
     pass
-
