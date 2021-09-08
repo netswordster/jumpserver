@@ -107,7 +107,8 @@ Login direct 👇
 class ResetPasswordSuccessMsg(BaseUserMessage):
     def __init__(self, user, request):
         super().__init__(user)
-        self.request = request
+        self.ip_address = get_request_ip_or_data(request)
+        self.browser = get_request_user_agent(request)
 
     def get_text_msg(self) -> dict:
         user = self.user
@@ -135,8 +136,8 @@ Browser: %(browser)s
         
         """) % {
             'name': user.name,
-            'ip_address': get_request_ip_or_data(self.request),
-            'browser': get_request_user_agent(self.request),
+            'ip_address': self.ip_address,
+            'browser': self.browser,
         }
         return {
             'subject': subject,
@@ -177,8 +178,8 @@ Browser: %(browser)s
         
         """) % {
             'name': user.name,
-            'ip_address': get_request_ip_or_data(self.request),
-            'browser': get_request_user_agent(self.request),
+            'ip_address': self.ip_address,
+            'browser': self.browser,
         }
         return {
             'subject': subject,
