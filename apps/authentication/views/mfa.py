@@ -40,7 +40,7 @@ class UserLoginOtpView(mixins.AuthMixin, FormView):
         context = {
             'methods': [
                 {
-                    'name': 'opt',
+                    'name': 'otp',
                     'label': _('One-time password'),
                     'enable': bool(user.otp_secret_key),
                     'selected': False,

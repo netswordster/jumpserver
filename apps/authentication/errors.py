@@ -61,12 +61,17 @@ block_mfa_msg = _(
     "(please contact admin to unlock it or try again after {} minutes)"
 )
 otp_failed_msg = _(
-    "MFA code invalid, or ntp sync server time, "
+    "One-time password invalid, or ntp sync server time, "
     "You can also try {times_try} times "
     "(The account will be temporarily locked for {block_time} minutes)"
 )
 sms_failed_msg = _(
     "SMS verify code invalid,"
+    "You can also try {times_try} times "
+    "(The account will be temporarily locked for {block_time} minutes)"
+)
+mfa_type_failed_msg = _(
+    "The MFA type({mfa_type}) is not supported"
     "You can also try {times_try} times "
     "(The account will be temporarily locked for {block_time} minutes)"
 )
@@ -156,6 +161,10 @@ class MFAFailedError(AuthFailedNeedLogMixin, AuthFailedError):
             elif mfa_type == MFAType.SMS_CODE:
                 self.msg = sms_failed_msg.format(
                     times_try=times_remainder, block_time=block_time
+                )
+            else:
+                self.msg = mfa_type_failed_msg.format(
+                    mfa_type=mfa_type, times_try=times_remainder, block_time=block_time
                 )
         else:
             self.msg = block_mfa_msg.format(settings.SECURITY_LOGIN_LIMIT_TIME)

@@ -6,15 +6,26 @@ from django.db import migrations
 def init_user_msg_subscription(apps, schema_editor):
     UserMsgSubscription = apps.get_model('notifications', 'UserMsgSubscription')
     User = apps.get_model('users', 'User')
-    from notifications.backends import BACKEND
 
     to_create = []
     users = User.objects.all()
     for user in users:
         receive_backends = []
-        for backend in BACKEND:
-            if backend.get_account(user):
-                receive_backends.append(backend)
+
+        receive_backends.append('site_msg')
+
+        if user.email:
+            receive_backends.append('email')
+
+        if user.wecom_id:
+            receive_backends.append('wecom')
+
+        if user.dingtalk_id:
+            receive_backends.append('dingtalk')
+
+        if user.feishu_id:
+            receive_backends.append('feishu')
+
         to_create.append(UserMsgSubscription(user=user, receive_backends=receive_backends))
     UserMsgSubscription.objects.bulk_create(to_create)
     print(f'\n  Init user message subscription: {len(to_create)}')
